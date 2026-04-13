@@ -37,12 +37,16 @@ def search_in_range(args: tuple) -> dict:
 
 
 def brute_force_password() -> None:
-    num_cores = os.cpu_count()
+    num_cores = os.cpu_count() or 1
     total = 100_000_000
     chunk = total // num_cores
 
     args = [
-        (i * chunk, (i + 1) * chunk, set(PASSWORDS_TO_BRUTE_FORCE))
+        (
+            i * chunk,
+            total if i == num_cores - 1 else (i + 1) * chunk,
+            set(PASSWORDS_TO_BRUTE_FORCE)
+        )
         for i in range(num_cores)
     ]
 
@@ -50,12 +54,18 @@ def brute_force_password() -> None:
         results = pool.map(search_in_range, args)
 
     final_result = {}
-    for parcial in results:
-        final_result.update(parcial)
+    for partial in results:
+        final_result.update(partial)
+
+    expected = len(PASSWORDS_TO_BRUTE_FORCE)
+    found = len(final_result)
+    if expected != found:
+        print(f"ERROR: expected {expected} passwords, found {found}")
+        exit(1)
 
     print("Resultado final:")
     for password_hash, password in final_result.items():
-        print(f"{password}: {password_hash[:16]}")
+        print(f"{password}: {password_hash}")
 
 
 if __name__ == "__main__":
